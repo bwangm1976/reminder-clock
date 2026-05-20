@@ -13,6 +13,7 @@
       --muted: #94a3b8;
       --accent: #38bdf8;
       --accent-2: #22c55e;
+      --danger: #fb7185;
     }
 
     * { box-sizing: border-box; }
@@ -31,7 +32,7 @@
     }
 
     .card {
-      width: min(92vw, 420px);
+      width: min(92vw, 460px);
       padding: 32px 28px 28px;
       border: 1px solid var(--line);
       border-radius: 20px;
@@ -52,6 +53,13 @@
         radial-gradient(circle at center, rgba(255, 255, 255, 0.98) 0 7px, transparent 8px),
         radial-gradient(circle at center, rgba(15, 23, 42, 0.94) 0 100%);
       box-shadow: 0 0 0 8px rgba(56, 189, 248, 0.08);
+    }
+
+    .clock.ringing {
+      animation: ring 0.22s ease-in-out infinite alternate;
+      box-shadow:
+        0 0 0 8px rgba(56, 189, 248, 0.08),
+        0 0 40px rgba(56, 189, 248, 0.5);
     }
 
     .clock::before,
@@ -136,16 +144,337 @@
       background: var(--accent-2);
       box-shadow: 0 0 12px rgba(34, 197, 94, 0.8);
     }
+
+    .timer {
+      margin-top: 24px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .time-display {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(2, 6, 23, 0.36);
+      color: #f8fafc;
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .time-control {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.56);
+    }
+
+    .time-control label {
+      display: block;
+      margin-bottom: 12px;
+      color: #cbd5e1;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: 42px 1fr 42px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .stepper button,
+    .primary {
+      border: 0;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+
+    .stepper button {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.14);
+      color: #e0f2fe;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .stepper button:active,
+    .primary:active {
+      transform: scale(0.97);
+    }
+
+    .stepper button:disabled,
+    .primary:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      border-radius: 12px;
+      background: rgba(2, 6, 23, 0.42);
+      color: var(--text);
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      margin: 0;
+      appearance: none;
+    }
+
+    .primary {
+      width: 100%;
+      min-height: 54px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), #2563eb);
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 700;
+      box-shadow: 0 14px 34px rgba(37, 99, 235, 0.32);
+    }
+
+    .primary.stop {
+      background: linear-gradient(135deg, var(--danger), #ef4444);
+      box-shadow: 0 14px 34px rgba(239, 68, 68, 0.28);
+    }
+
+    .status {
+      min-height: 24px;
+      margin: 0;
+      color: #bae6fd;
+      font-size: 15px;
+    }
+
+    @keyframes ring {
+      from { transform: rotate(-4deg); }
+      to { transform: rotate(4deg); }
+    }
+
+    @media (max-width: 420px) {
+      .card {
+        padding: 28px 20px 24px;
+      }
+
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .time-display {
+        font-size: 46px;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="card">
-    <div class="clock" aria-hidden="true">
+    <div class="clock" id="clock" aria-hidden="true">
       <div class="bell"></div>
     </div>
     <h1>提醒小钟</h1>
-    <p>一个简单的提醒页面。<br>到点就响铃，帮你记住重要的事。</p>
+    <p>设置倒计时时长，开始后到点响铃提醒。</p>
+
+    <section class="timer" aria-label="倒计时设置">
+      <div class="time-display" id="timeDisplay" aria-live="polite">05:00</div>
+
+      <div class="controls">
+        <div class="time-control">
+          <label for="minutes">分钟</label>
+          <div class="stepper">
+            <button type="button" data-step="minutes" data-change="-1" aria-label="减少分钟">−</button>
+            <input id="minutes" type="number" min="0" max="99" value="5">
+            <button type="button" data-step="minutes" data-change="1" aria-label="增加分钟">+</button>
+          </div>
+        </div>
+
+        <div class="time-control">
+          <label for="seconds">秒</label>
+          <div class="stepper">
+            <button type="button" data-step="seconds" data-change="-1" aria-label="减少秒">−</button>
+            <input id="seconds" type="number" min="0" max="59" value="0">
+            <button type="button" data-step="seconds" data-change="1" aria-label="增加秒">+</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="primary" id="toggleButton" type="button">开始</button>
+      <p class="status" id="status">准备好了</p>
+    </section>
+
     <div class="tag"><i></i>专注 · 提醒 · 准时</div>
   </main>
+
+  <script>
+    const minutesInput = document.getElementById("minutes");
+    const secondsInput = document.getElementById("seconds");
+    const timeDisplay = document.getElementById("timeDisplay");
+    const toggleButton = document.getElementById("toggleButton");
+    const statusText = document.getElementById("status");
+    const clock = document.getElementById("clock");
+    const stepButtons = document.querySelectorAll("[data-step]");
+
+    let timerId = null;
+    let remainingSeconds = getConfiguredSeconds();
+    let audioContext = null;
+
+    function clamp(value, min, max) {
+      const number = Number.parseInt(value, 10);
+      if (Number.isNaN(number)) {
+        return min;
+      }
+      return Math.min(Math.max(number, min), max);
+    }
+
+    function getConfiguredSeconds() {
+      const minutes = clamp(minutesInput.value, 0, 99);
+      const seconds = clamp(secondsInput.value, 0, 59);
+      minutesInput.value = minutes;
+      secondsInput.value = seconds;
+      return minutes * 60 + seconds;
+    }
+
+    function formatTime(totalSeconds) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function updateDisplay() {
+      timeDisplay.textContent = formatTime(remainingSeconds);
+    }
+
+    function setControlsDisabled(disabled) {
+      minutesInput.disabled = disabled;
+      secondsInput.disabled = disabled;
+      stepButtons.forEach((button) => {
+        button.disabled = disabled;
+      });
+    }
+
+    function ensureAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext.state === "suspended") {
+        audioContext.resume();
+      }
+    }
+
+    function playAlarm() {
+      ensureAudio();
+      const now = audioContext.currentTime;
+
+      for (let i = 0; i < 4; i += 1) {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(i % 2 === 0 ? 880 : 660, now + i * 0.32);
+        gain.gain.setValueAtTime(0.001, now + i * 0.32);
+        gain.gain.exponentialRampToValueAtTime(0.28, now + i * 0.32 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.32 + 0.24);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(now + i * 0.32);
+        oscillator.stop(now + i * 0.32 + 0.25);
+      }
+    }
+
+    function stopTimer(message = "已结束") {
+      clearInterval(timerId);
+      timerId = null;
+      toggleButton.textContent = "开始";
+      toggleButton.classList.remove("stop");
+      setControlsDisabled(false);
+      clock.classList.remove("ringing");
+      statusText.textContent = message;
+    }
+
+    function finishTimer() {
+      stopTimer("时间到，闹钟响了");
+      remainingSeconds = 0;
+      updateDisplay();
+      clock.classList.add("ringing");
+      playAlarm();
+      setTimeout(() => clock.classList.remove("ringing"), 2200);
+    }
+
+    function startTimer() {
+      remainingSeconds = getConfiguredSeconds();
+
+      if (remainingSeconds <= 0) {
+        statusText.textContent = "请先设置大于 0 的时间";
+        return;
+      }
+
+      ensureAudio();
+      updateDisplay();
+      setControlsDisabled(true);
+      toggleButton.textContent = "结束";
+      toggleButton.classList.add("stop");
+      statusText.textContent = "倒计时进行中";
+
+      timerId = setInterval(() => {
+        remainingSeconds -= 1;
+        updateDisplay();
+
+        if (remainingSeconds <= 0) {
+          finishTimer();
+        }
+      }, 1000);
+    }
+
+    function syncConfiguredTime() {
+      if (timerId) {
+        return;
+      }
+      remainingSeconds = getConfiguredSeconds();
+      updateDisplay();
+      statusText.textContent = remainingSeconds > 0 ? "准备好了" : "请设置提醒时间";
+    }
+
+    stepButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = button.dataset.step === "minutes" ? minutesInput : secondsInput;
+        const max = button.dataset.step === "minutes" ? 99 : 59;
+        input.value = clamp(input.value, 0, max) + Number(button.dataset.change);
+        input.value = clamp(input.value, 0, max);
+        syncConfiguredTime();
+      });
+    });
+
+    minutesInput.addEventListener("input", syncConfiguredTime);
+    secondsInput.addEventListener("input", syncConfiguredTime);
+    toggleButton.addEventListener("click", () => {
+      if (timerId) {
+        stopTimer("倒计时已结束");
+        remainingSeconds = getConfiguredSeconds();
+        updateDisplay();
+      } else {
+        startTimer();
+      }
+    });
+
+    updateDisplay();
+  </script>
 </body>
 </html>
